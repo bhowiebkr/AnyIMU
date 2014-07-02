@@ -292,8 +292,9 @@ class AnyIMU_window(QMainWindow):
     self.magPlotWidget.addPlot(fillLevelIn=0, brushIn=(0,200,0,100), penIn=(0,255,0), dataType='int', dataName='Y')
     self.magPlotWidget.addPlot(fillLevelIn=0, brushIn=(0,0,200,100), penIn=(0,0,255), dataType='int', dataName='Z')
 
-    self.barPlotWidget.addPlot(fillLevelIn=0, brushIn=(200,0,0,100), penIn=(255,0,0), dataType='float', dataName='X')
-    self.barPlotWidget.addPlot(fillLevelIn=0, brushIn=(0,200,0,100), penIn=(0,255,0), dataType='float', dataName='Y')
+    self.barPlotWidget.addPlot(fillLevelIn=0, brushIn=(200,0,0,100), penIn=(255,0,0), dataType='float', dataName='TEMP')
+    self.barPlotWidget.addPlot(fillLevelIn=0, brushIn=(0,200,0,100), penIn=(0,255,0), dataType='float', dataName='PRS')
+    self.barPlotWidget.addPlot(fillLevelIn=0, brushIn=(0,0,200,100), penIn=(0,0,255), dataType='float', dataName='ALT')
                                                                                       
     # the main layout and widgets
     self.mainWidget = QWidget()
@@ -348,15 +349,15 @@ class AnyIMU_window(QMainWindow):
   # ---------------------------------------------------------------------------------------
   def update(self, line):
     try:
-      data = map(int, line.split(','))
+      data = map(float, line.split(','))
       dataChunks =[data[x:x+3] for x in xrange(0, len(data), 3)]
     except ValueError, e:
-      print 'cound not split raw data into chunks!', e
+      print 'ERROR', e
       return
 
-    self.accDataCurr = dataChunks[0]
-    self.gyrDataCurr = dataChunks[1]
-    self.magDataCurr = dataChunks[2]
+    self.accDataCurr = map(int, dataChunks[0])
+    self.gyrDataCurr = map(int, dataChunks[1])
+    self.magDataCurr = map(int, dataChunks[2])
     self.barDataCurr = dataChunks[3]
 
     self.accPlotWidget.update(self.accDataCurr)
