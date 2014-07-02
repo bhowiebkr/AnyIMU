@@ -1,6 +1,6 @@
 #TODO need to close the thread correctly when the UI is closed
 
-import serial, sys, time, math
+import serial, sys, time, math, os
 
 # -- PyQt --
 from PySide.QtGui import *
@@ -314,6 +314,38 @@ class AnyIMU_window(QMainWindow):
     self.baudRateCombo.setCurrentIndex(default)  
     self.viewport = Viewport()
     self.viewport.setFixedHeight(500)
+
+
+    # Debugging stuff----------------------------------
+    debugLayout = QHBoxLayout()
+
+    # these are used to offset the the rotation
+    self.xAdd = QSpinBox()
+    self.yAdd = QSpinBox()
+    self.zAdd = QSpinBox()
+
+    for each in [self.xAdd, self.yAdd, self.zAdd]:
+      each.setMinimum(-180)  # min
+      each.setMaximum(180)   # max
+      each.setSingleStep(90) # change this to a small value if need be
+
+    # these are used for inverting the rotations
+    self.xMult = QCheckBox()
+    self.yMult = QCheckBox()
+    self.zMult = QCheckBox()
+
+    self.xAdd.setValue(0)
+    self.yAdd.setValue(90)  # in my case I need to offset by 90 in the Y axis
+    self.zAdd.setValue(0)
+    self.xMult.setChecked(False)
+    self.yMult.setChecked(True)   # in my case I need to invert the Y axis on the acc
+    self.zMult.setChecked(False)
+
+    for each in [self.xAdd, self.yAdd, self.zAdd, self.xMult, self.yMult, self.zMult]:
+      debugLayout.addWidget(each)
+
+    # Debugging stuff----------------------------------
+    
     
     self.serialBtn = QPushButton('Connect')
 
@@ -331,8 +363,12 @@ class AnyIMU_window(QMainWindow):
     self.mainLayout.addWidget(self.gyrPlotWidget, 2,1,1,1)
     self.mainLayout.addWidget(self.magPlotWidget, 3,0,1,1)
     self.mainLayout.addWidget(self.barPlotWidget, 3,1,1,1)
+    self.mainLayout.addLayout(debugLayout, 4,0,1,2)
+
 
     self.serialBtn.clicked.connect(self.serialBtnCmd)
+
+    self.serialBtnCmd()
 
   # ---------------------------------------------------------------------------------------
   def setupSerialThread(self):
@@ -369,17 +405,54 @@ class AnyIMU_window(QMainWindow):
 
   # ---------------------------------------------------------------------------------------
   def update3d(self):
+    os.system('cls')
 
-    if self.magDataCurr==None: return
+    if self.accDataCurr==None: return
 
-    self.viewport.setXRotation(self.magDataCurr[0]*180.0/600.0)
-    self.viewport.setYRotation(self.magDataCurr[1]*180.0/600.0)
-    self.viewport.setZRotation(self.magDataCurr[2]*180.0/600.0)
+    # normalize our accelerometer with values between -1 and 1 and clamped to that range 
+    x = clamp(self.accDataCurr[0]/4096.0,-1,1)
+    y = clamp(self.accDataCurr[1]/4096.0,-1,1)
+    z = clamp(self.accDataCurr[2]/4096.0,-1,1)
+
+    # this is the force vector
+    R = math.sqrt(x*x + y*y + z*z)
+
+    # the angles in radians
+    Axr = math.acos(x/R)
+    Ayr = math.acos(y/R)
+    Azr = math.acos(z/R)
+
+    # Direction Cosine in radians
+    cosX = math.cos(Axr)
+    cosY = math.cos(Ayr)
+    cosZ = math.cos(Azr)
+
+    # ---- get the debugging values----------
+    xAdd = float(self.xAdd.value())
+    yAdd = float(self.yAdd.value())
+    zAdd = float(self.zAdd.value())  
+
+    if self.xMult.isChecked(): xMult = -1
+    else: xMult = 1
+
+    if self.yMult.isChecked(): yMult = -1
+    else: yMult = 1
+
+    if self.zMult.isChecked(): zMult = -1
+    else: zMult = 1
+    # ---------------------------------------
+
+    self.viewport.setXRotation(math.degrees(Axr)*xMult+xAdd)
+    self.viewport.setYRotation(math.degrees(Ayr)*yMult+yAdd)
+    self.viewport.setZRotation(math.degrees(Azr)*zMult+zAdd)
 
   # ---------------------------------------------------------------------------------------
   def serialBtnCmd(self):
     self.setupSerialThread()
 
+def clamp(n, minn, maxn):
+  return max(min(maxn, n), minn)
+   
 # -----------------------------------------------------------------------------------------
 def startAnyIMU():
   app = QApplication(sys.argv)
