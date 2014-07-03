@@ -25,20 +25,28 @@ class SerialThread(QThread):
   def __init__(self, parent=None):
     super(SerialThread, self).__init__(parent)
     self.serial = None
+    self.mutex = QMutex()
+    self.condition = QWaitCondition()
+    self.abort = False
 
   def serialConn(self, inPort, rate):
     self.serial = serial.Serial(port=inPort, baudrate=rate)
     if self.serial.isOpen():
       print 'Connected to serial'
-      time.sleep(1)
+      time.sleep(0.1)
 
-  def serialDis(self):
-    self.serial.clost()
+  def stop(self):
+    self.abort = True
+    self.wait()
+    self.serial.close()
 
   def run(self):
     while True:
+      if self.abort:
+        return
       line = str(self.serial.readline())
       self.progress.emit(line)    
+    self.deleteLater()
 
 
 # -----------------------------------------------------------------------------------------
@@ -220,6 +228,7 @@ class SensorDisplay(QWidget):
     title = QLabel(name)
     title.setStyleSheet('color: white; background-color: black')
     title.setAlignment(Qt.AlignCenter)
+    self.setFixedHeight(100)
 
     mainLayout = QVBoxLayout()
     mainLayout.setContentsMargins(0,0,0,0)
@@ -266,13 +275,16 @@ class AnyIMU_window(QMainWindow):
   def __init__(self, parent=None):
     super(AnyIMU_window, self).__init__(parent)
     self.setWindowTitle('AnyIMU')
-    self.resize(700, 900)
+    self.resize(400, 600)
 
     self.accDataCurr = None
     self.gyrDataCurr = None
     self.magDataCurr = None
     self.barDataCurr = None
     self.serialThread = None
+    self.skipDataCount = 5
+
+
 
     # The plot widget
     self.accPlotWidget = SensorDisplay(name='Accelerometer')
@@ -313,7 +325,7 @@ class AnyIMU_window(QMainWindow):
     default = self.baudRateCombo.findText('9600')
     self.baudRateCombo.setCurrentIndex(default)  
     self.viewport = Viewport()
-    self.viewport.setFixedHeight(500)
+#    self.viewport.setFixedHeight(500)
 
 
     # Debugging stuff----------------------------------
@@ -384,6 +396,11 @@ class AnyIMU_window(QMainWindow):
 
   # ---------------------------------------------------------------------------------------
   def update(self, line):
+    # skip the first couple lines of data, because there could be some junk
+    if self.skipDataCount:
+      self.skipDataCount-=1
+      return
+
     try:
       data = map(float, line.split(','))
       dataChunks =[data[x:x+3] for x in xrange(0, len(data), 3)]
@@ -405,7 +422,7 @@ class AnyIMU_window(QMainWindow):
 
   # ---------------------------------------------------------------------------------------
   def update3d(self):
-    os.system('cls')
+    #os.system('cls')
 
     if self.accDataCurr==None: return
 
@@ -458,6 +475,8 @@ def startAnyIMU():
   app = QApplication(sys.argv)
   window = AnyIMU_window()
   window.show()
-  sys.exit(app.exec_())
+  r = app.exec_()
+  window.serialThread.stop()
+  sys.exit(r)
 
 startAnyIMU()
