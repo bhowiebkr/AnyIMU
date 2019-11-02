@@ -1,27 +1,16 @@
-AnyIMU
-======
+## Any IMU
 
-AnyIMU is a GUI used for reading sensor data from any IMU sensor module with the Arduino framework.
+Any IMU is a rather old repo of python and arduino code used for reading electronic digital sensors. The gui was written with PySide and pyqtgraph. Also included is c++ code for the arduino (.ino) files. 
 
+Protocols these chips are using are I2C and SPI
 
-The GUI is written in Python using PySide.
+The following digital sensors are supported in this framework:
 
-The IMU
--------
-* 10-DOF IMU sensor board over I2C
+- Gyroscope - L3G4200D (address 0x69)
+- Accelerometer - BMA180 (address 0x40
+- Magnetometer - HMC5883L (address 0x1E)
+- Barometer - BMP085 (address 0x77)
 
-Gyroscope - L3G4200D
---------------------
-* address 0x69
+![imu v1 board](https://github.com/bhowiebkr/AnyIMU/blob/master/images/IMU-v1-Board.jpg)
 
-Accelerometer - BMA180
-----------------------
-* address 0x40
-
-Magnetometer - HMC5883L
------------------------
-* address 0x1E
-
-barometer - BMP085
-------------------
-* address 0x77
+![imu v2 board](https://github.com/bhowiebkr/AnyIMU/blob/master/images/IMU-v2-Board.jpg)
