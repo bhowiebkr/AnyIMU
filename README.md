@@ -11,6 +11,8 @@ The following digital sensors are supported in this framework:
 - Magnetometer - HMC5883L (address 0x1E)
 - Barometer - BMP085 (address 0x77)
 
+## Below are photos of the prototype board used with this code
+
 ![imu v1 board](https://github.com/bhowiebkr/AnyIMU/blob/master/images/IMU-v1-Board.jpg)
 
 ![imu v2 board](https://github.com/bhowiebkr/AnyIMU/blob/master/images/IMU-v2-Board.jpg)
